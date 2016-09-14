@@ -3,7 +3,9 @@
 						  xmlns:s="library://ns.adobe.com/flex/spark" 
 						  xmlns:mx="library://ns.adobe.com/flex/mx" 
 						  width="100%"
-						  initialize="initializeHandler(event)">
+						  initialize="initializeHandler(event)"
+						  addedToStage="addedToStageHandler(event)"
+						  removedFromStage="removedFromStageHandler(event)">
 	<fx:Script>
 		<![CDATA[
 			import mx.collections.IList;
@@ -15,6 +17,8 @@
 			import org.openforis.collect.Application;
 			import org.openforis.collect.client.ClientFactory;
 			import org.openforis.collect.client.UserClient;
+			import org.openforis.collect.event.EventDispatcherFactory;
+			import org.openforis.collect.event.UIEvent;
 			import org.openforis.collect.i18n.Message;
 			import org.openforis.collect.model.proxy.RecordProxy;
 			import org.openforis.collect.model.proxy.UserProxy;
@@ -35,7 +39,9 @@
 			[Bindable]
 			private var recordOwner:UserProxy;
 			
-			protected function initializeHandler(event:FlexEvent):void {
+			private var _broadcastEventListenerInitialized:Boolean;
+		
+			private function initializeHandler(event:FlexEvent):void {
 				viewStack.selectedChild = loadingPanel;
 				
 				if ( Application.user.hasRole(UserProxy.ROLE_ADMIN)) {
@@ -43,6 +49,32 @@
 				} else {
 					viewStack.selectedChild = defaultPanel;
 				}
+			}
+			
+			private function addedToStageHandler(event:Event):void {
+				if ( ! _broadcastEventListenerInitialized ) {
+					initBroadcastEventListeners();
+				}
+			}
+			
+			private function removedFromStageHandler(event:Event):void {
+				removeBroadcastEventListeners();
+			}
+			
+			private function initBroadcastEventListeners():void {
+				EventDispatcherFactory.getEventDispatcher().addEventListener(UIEvent.RELOAD_RECORD_SUMMARIES, reloadRecordSummariesHandler);
+				_broadcastEventListenerInitialized = true;
+			}
+			
+			private function reloadRecordSummariesHandler(event:UIEvent):void {
+				if ( Application.user.hasRole(UserProxy.ROLE_ADMIN)) {
+					loadAssignableOwners();
+				}
+			}
+			
+			private function removeBroadcastEventListeners():void {
+				EventDispatcherFactory.getEventDispatcher().removeEventListener(UIEvent.RELOAD_RECORD_SUMMARIES, reloadRecordSummariesHandler);
+				_broadcastEventListenerInitialized = false;
 			}
 			
 			override public function set data(value:Object): void {
@@ -72,7 +104,7 @@
 				}, null));
 			}
 			
-			protected function ownerChangeHandler(event:IndexChangeEvent):void {
+			private function ownerChangeHandler(event:IndexChangeEvent):void {
 				var selectedUser:UserProxy = assignableOwners.getItemAt(event.newIndex) as UserProxy;
 				var record:RecordProxy = data as RecordProxy;
 				var responder:IResponder = new AsyncResponder(
