@@ -22,6 +22,7 @@
 			import org.openforis.collect.i18n.Message;
 			import org.openforis.collect.model.proxy.RecordProxy;
 			import org.openforis.collect.model.proxy.UserProxy;
+			import org.openforis.collect.util.AlertUtil;
 			import org.openforis.collect.util.CollectionUtil;
 			
 			import spark.events.IndexChangeEvent;
@@ -66,7 +67,7 @@
 				_broadcastEventListenerInitialized = true;
 			}
 			
-			private function reloadRecordSummariesHandler(event:UIEvent):void {
+			private function reloadRecordSummariesHandler(event:UIEvent, token:Object = null):void {
 				if ( Application.user.hasRole(UserProxy.ROLE_ADMIN)) {
 					loadAssignableOwners();
 				}
